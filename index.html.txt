@@ -366,7 +366,7 @@
         // API Keys (In a real app, these should be secured on the backend)
         const GOOGLE_API_KEY = "AIzaSyDOlfbhDKwX2HsGk2JijQs5KZDfPViNfPg";
         const OPENAI_API_KEY = "sk-ab3d6c26b1d84477b39bff373dad028d";
-        const BACKEND_URL = "https://your-lizz-ai-backend.onrender.com"; // UPDATE THIS
+        const BACKEND_URL = "https://lizz-backend.onrender.com"; // UPDATE THIS
         
         // DOM Elements
         const loginModal = document.getElementById('loginModal');
