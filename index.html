@@ -153,6 +153,18 @@
             resize: none;
             padding-right: 40px;
         }
+        
+        .premium-feature {
+            display: none;
+        }
+        
+        .premium-user .premium-feature {
+            display: block;
+        }
+        
+        .premium-user .premium-feature-inline {
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="bg-dark text-gray-100">
@@ -195,7 +207,7 @@
             <div class="mt-6 p-4 bg-gray-700 rounded-md">
                 <p class="text-sm text-gray-300">
                     <i class="fas fa-info-circle text-primary mr-2"></i>
-                    Premium access is free for: haivarunkarthik@gmail.com, varunkarthiktrading@gmail.com, aiwinsvarun@gmail.com
+                    Premium access for authorized users only
                 </p>
             </div>
         </div>
@@ -222,21 +234,18 @@
                 <div class="relative">
                     <button id="pricingDropdown" class="text-gray-300 hover:text-white flex items-center">
                         <i class="fas fa-gem mr-1"></i>
-                        <span>Upgrade</span>
+                        <span>Account</span>
                         <i class="fas fa-chevron-down ml-1 text-xs"></i>
                     </button>
                     
                     <div id="pricingMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 hidden z-10">
                         <div class="px-4 py-3">
-                            <p class="text-sm text-gray-300 mb-2">Premium Features:</p>
-                            <ul class="text-xs text-gray-400 space-y-1">
-                                <li>• 200% accuracy boost</li>
-                                <li>• Unlimited storage</li>
-                                <li>• Priority processing</li>
-                                <li>• Advanced reasoning</li>
-                            </ul>
+                            <p class="text-sm text-gray-300 mb-2">Account Status:</p>
+                            <div id="accountStatus" class="text-xs text-gray-400">
+                                Free User
+                            </div>
                             <div class="mt-3 text-center">
-                                <p class="text-xs text-gray-500">Pricing plans will be updated soon</p>
+                                <p class="text-xs text-gray-500">Premium features available for authorized accounts</p>
                             </div>
                         </div>
                     </div>
@@ -250,11 +259,11 @@
                 <i class="fas fa-brain mr-2"></i>
                 <span>Normal</span>
             </button>
-            <button id="deepThinkMode" class="mode-toggle px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-md flex items-center hover:bg-gray-600">
+            <button id="deepThinkMode" class="mode-toggle px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-md flex items-center hover:bg-gray-600 premium-feature">
                 <i class="fas fa-microscope mr-2"></i>
                 <span>DeepThink</span>
             </button>
-            <button id="webSearchMode" class="mode-toggle px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-md flex items-center hover:bg-gray-600">
+            <button id="webSearchMode" class="mode-toggle px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-md flex items-center hover:bg-gray-600 premium-feature">
                 <i class="fas fa-search mr-2"></i>
                 <span>Web Search</span>
             </button>
@@ -311,8 +320,12 @@
                                 <div>
                                     <div class="font-bold mb-1">Lizz AI</div>
                                     <div class="text-gray-300">
-                                        <p>Hello! I'm Lizz AI, your comprehensive artificial intelligence assistant. I can help with scientific research, education, creative projects, and more.</p>
-                                        <p class="mt-2">Try switching to DeepThink mode for complex reasoning or Web Search mode for real-time information.</p>
+                                        <p>Hello! I'm Lizz AI, your comprehensive artificial intelligence assistant.</p>
+                                        <p class="mt-2">I can help with scientific research, education, creative projects, and more.</p>
+                                        <div id="premiumWelcome" class="mt-3 premium-feature">
+                                            <p class="text-primary font-medium">✨ Premium features activated!</p>
+                                            <p class="text-sm">You have access to DeepThink and Web Search modes.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -368,8 +381,8 @@
             "aiwinsvarun@gmail.com"
         ];
         
-        // IMPORTANT: Update this with your actual Render backend URL
-        const BACKEND_URL = "https://lizz-backend.onrender.com";
+        // Backend URL - UPDATE THIS WITH YOUR ACTUAL BACKEND URL
+        const BACKEND_URL = "https://your-backend-url.onrender.com";
         
         // DOM Elements
         const loginModal = document.getElementById('loginModal');
@@ -389,6 +402,8 @@
         const userEmail = document.getElementById('userEmail');
         const autoLearningIndicator = document.getElementById('autoLearningIndicator');
         const progressBar = document.getElementById('progressBar');
+        const accountStatus = document.getElementById('accountStatus');
+        const premiumWelcome = document.getElementById('premiumWelcome');
         
         // Mode buttons
         const normalMode = document.getElementById('normalMode');
@@ -439,14 +454,21 @@
             
             // Check if user is premium
             isPremium = premiumUsers.includes(currentUser.email);
+            
             if (isPremium) {
                 document.querySelector('#pricingDropdown span').textContent = 'Premium';
                 document.querySelector('#pricingDropdown i').className = 'fas fa-crown mr-1';
                 document.querySelector('#pricingDropdown').classList.add('premium-badge');
+                accountStatus.innerHTML = '<span class="text-primary">Premium User</span>';
+                app.classList.add('premium-user');
+                premiumWelcome.classList.remove('hidden');
             } else {
-                document.querySelector('#pricingDropdown span').textContent = 'Upgrade';
-                document.querySelector('#pricingDropdown i').className = 'fas fa-gem mr-1';
+                document.querySelector('#pricingDropdown span').textContent = 'Free';
+                document.querySelector('#pricingDropdown i').className = 'fas fa-user mr-1';
                 document.querySelector('#pricingDropdown').classList.remove('premium-badge');
+                accountStatus.innerHTML = 'Free User';
+                app.classList.remove('premium-user');
+                premiumWelcome.classList.add('hidden');
             }
         }
         
@@ -541,29 +563,38 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
         
-        // Call your secure backend API
+        // Call secure backend API
         async function callLizzAI(prompt) {
             try {
+                console.log('Calling Lizz AI backend with prompt:', prompt);
+                
                 const response = await fetch(`${BACKEND_URL}/api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         message: prompt,
-                        mode: currentMode
+                        mode: currentMode,
+                        user: currentUser.email,
+                        isPremium: isPremium
                     })
                 });
                 
+                console.log('Backend response status:', response.status);
+                
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(`API Error: ${error.error || 'Unknown error'}`);
+                    const errorData = await response.json();
+                    console.error('Backend Error:', errorData);
+                    throw new Error(`Backend Error: ${errorData.error || 'Unknown error'}`);
                 }
                 
                 const data = await response.json();
+                console.log('Backend response:', data);
+                
                 return data.response;
             } catch (error) {
-                console.error("Lizz AI API Error:", error);
+                console.error("Backend API Error:", error);
                 return `Sorry, I encountered an error: ${error.message}. Please try again.`;
             }
         }
@@ -592,7 +623,7 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
             try {
-                // Get AI response from your secure backend
+                // Get AI response from secure backend
                 const response = await callLizzAI(message);
                 
                 // Hide typing indicator and show response
@@ -608,6 +639,12 @@
         
         // Switch modes
         function switchMode(mode) {
+            // Only allow premium users to switch to premium modes
+            if ((mode === 'deepthink' || mode === 'websearch') && !isPremium) {
+                alert('DeepThink and Web Search modes are only available for premium users.');
+                return;
+            }
+            
             currentMode = mode;
             
             // Update UI
@@ -647,12 +684,6 @@
                     progressBar.style.width = '0%';
                 }
             }, 20); // 100% in 5 seconds
-            
-            // In a real implementation, this would:
-            // 1. Fetch latest information from knowledge sources
-            // 2. Update internal models
-            // 3. Process new data patterns
-            // 4. Optimize response algorithms
             
             // Restart every minute
             setTimeout(startAutoLearning, 60000);
@@ -738,24 +769,3 @@
     </script>
 </body>
 </html>
-<script>
-  // ... existing code ...
-
-  async function handleUserMessage() {
-    const message = userInput.value.trim();
-    if (!message) return;
-
-    addMessage('user', message);
-    userInput.value = '';
-    userInput.style.height = 'auto';
-
-    try {
-      const response = await callLizzAI(message);
-      addMessage('ai', response);
-    } catch (error) {
-      addMessage('ai', `Error: ${error.message}`);
-    }
-  }
-
-  // ... rest of the code ...
-</script>
