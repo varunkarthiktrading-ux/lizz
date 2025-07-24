@@ -1,376 +1,740 @@
-<script>
-    // Configuration
-    const premiumUsers = [
-        "haivarunkarthik@gmail.com",
-        "varunkarthiktrading@gmail.com",
-        "aiwinsvarun@gmail.com"
-    ];
-    
-    // API Keys - REMOVED for security (now handled by backend)
-    const BACKEND_URL = "https://lizz-backend.onrender.com"; // UPDATE WITH YOUR ACTUAL BACKEND URL
-    
-    // DOM Elements
-    const loginModal = document.getElementById('loginModal');
-    const app = document.getElementById('app');
-    const loginForm = document.getElementById('loginForm');
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const newChat = document.getElementById('newChat');
-    const historyList = document.getElementById('historyList');
-    const chatMessages = document.getElementById('chatMessages');
-    const userInput = document.getElementById('userInput');
-    const sendButton = document.getElementById('sendButton');
-    const typingIndicator = document.getElementById('typingIndicator');
-    const pricingDropdown = document.getElementById('pricingDropdown');
-    const pricingMenu = document.getElementById('pricingMenu');
-    const userEmail = document.getElementById('userEmail');
-    const autoLearningIndicator = document.getElementById('autoLearningIndicator');
-    const progressBar = document.getElementById('progressBar');
-    
-    // Mode buttons
-    const normalMode = document.getElementById('normalMode');
-    const deepThinkMode = document.getElementById('deepThinkMode');
-    const webSearchMode = document.getElementById('webSearchMode');
-    
-    // State
-    let currentUser = null;
-    let chatHistory = [];
-    let fullHistory = [];
-    let isPremium = false;
-    let currentMode = 'normal'; // 'normal', 'deepthink', 'websearch'
-    let autoLearningInterval = null;
-    
-    // Initialize
-    function init() {
-        // Check if user is already logged in
-        const savedUser = localStorage.getItem('lizzUser');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lizz AI - Version 1.0</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10a37f',
+                        dark: '#202123',
+                        sidebar: '#2d2f31',
+                        input: '#40414f',
+                        card: '#343541',
+                        deepthink: '#7e22ce',
+                        search: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-            showApp();
-        } else {
-            showLogin();
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #343541;
+            color: #ececf1;
+            overflow: hidden;
+        }
+        
+        .chat-container {
+            height: calc(100vh - 180px);
+        }
+        
+        .message-user {
+            background-color: #444654;
+        }
+        
+        .message-ai {
+            background-color: #343541;
+        }
+        
+        .message-deepthink {
+            background-color: #4338ca;
+            border-left: 3px solid #7e22ce;
+        }
+        
+        .message-websearch {
+            background-color: #1e40af;
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        
+        .history-item:hover {
+            background-color: #2a2b32;
+        }
+        
+        .typing-indicator {
+            display: inline-block;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #a0a0a0;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .glow {
+            box-shadow: 0 0 10px rgba(16, 163, 127, 0.5);
+        }
+        
+        .premium-badge {
+            background: linear-gradient(90deg, #10a37f, #1a7f64);
+        }
+        
+        .deepthink-badge {
+            background: linear-gradient(90deg, #7e22ce, #5b21b6);
+        }
+        
+        .search-badge {
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+        }
+        
+        .mode-toggle {
+            transition: all 0.3s ease;
+        }
+        
+        .mode-toggle.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-bar {
+            height: 3px;
+            background: linear-gradient(90deg, #10a37f, #7e22ce);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .auto-learning-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        
+        textarea {
+            resize: none;
+            padding-right: 40px;
+        }
+    </style>
+</head>
+<body class="bg-dark text-gray-100">
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="mx-auto bg-gray-700 rounded-full w-16 h-16 flex items-center justify-center mb-4 glow">
+                    <i class="fas fa-robot text-2xl text-primary"></i>
+                </div>
+                <h2 class="text-2xl font-bold">Welcome to Lizz AI</h2>
+                <p class="text-gray-400 mt-2">Version 1.0 - Comprehensive AI Assistant</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-medium mb-2" for="email">Email</label>
+                    <input type="email" id="email" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-medium mb-2" for="password">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
+                </div>
+                
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" id="remember" class="mr-2">
+                    <label for="remember" class="text-gray-300 text-sm">Remember me</label>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+                    Login to Lizz AI
+                </button>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-gray-400 text-sm">New to Lizz AI? <a href="#" class="text-primary hover:underline">Create an account</a></p>
+                </div>
+            </form>
+            
+            <div class="mt-6 p-4 bg-gray-700 rounded-md">
+                <p class="text-sm text-gray-300">
+                    <i class="fas fa-info-circle text-primary mr-2"></i>
+                    Premium access is free for: haivarunkarthik@gmail.com, varunkarthiktrading@gmail.com, aiwinsvarun@gmail.com
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-sidebar py-3 px-4 flex items-center justify-between border-b border-gray-700">
+            <div class="flex items-center">
+                <button id="toggleSidebar" class="mr-3 text-gray-300 hover:text-white">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold">Lizz AI</h1>
+                <span class="ml-2 bg-primary text-white text-xs px-2 py-1 rounded">v1.0</span>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <div id="autoLearningIndicator" class="auto-learning-indicator hidden items-center text-xs bg-blue-900 px-2 py-1 rounded-full">
+                    <i class="fas fa-sync-alt mr-1"></i>
+                    <span>Auto-learning</span>
+                </div>
+                
+                <div class="relative">
+                    <button id="pricingDropdown" class="text-gray-300 hover:text-white flex items-center">
+                        <i class="fas fa-gem mr-1"></i>
+                        <span>Upgrade</span>
+                        <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                    </button>
+                    
+                    <div id="pricingMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 hidden z-10">
+                        <div class="px-4 py-3">
+                            <p class="text-sm text-gray-300 mb-2">Premium Features:</p>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>• 200% accuracy boost</li>
+                                <li>• Unlimited storage</li>
+                                <li>• Priority processing</li>
+                                <li>• Advanced reasoning</li>
+                            </ul>
+                            <div class="mt-3 text-center">
+                                <p class="text-xs text-gray-500">Pricing plans will be updated soon</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Mode Toggles -->
+        <div class="bg-sidebar border-b border-gray-700 px-4 py-2 flex flex-wrap gap-2">
+            <button id="normalMode" class="mode-toggle active px-3 py-1.5 bg-primary text-white text-sm rounded-md flex items-center">
+                <i class="fas fa-brain mr-2"></i>
+                <span>Normal</span>
+            </button>
+            <button id="deepThinkMode" class="mode-toggle px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-md flex items-center hover:bg-gray-600">
+                <i class="fas fa-microscope mr-2"></i>
+                <span>DeepThink</span>
+            </button>
+            <button id="webSearchMode" class="mode-toggle px-3 py-1.5 bg-gray-700 text-gray-300 text-sm rounded-md flex items-center hover:bg-gray-600">
+                <i class="fas fa-search mr-2"></i>
+                <span>Web Search</span>
+            </button>
+            <div class="ml-auto flex items-center text-xs text-gray-400">
+                <i class="fas fa-shield-alt mr-1"></i>
+                <span>Secure Connection</span>
+            </div>
+        </div>
+        
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <div id="sidebar" class="sidebar w-64 bg-sidebar h-full flex flex-col transform -translate-x-full md:translate-x-0 fixed md:static z-30">
+                <div class="p-3">
+                    <button id="newChat" class="w-full flex items-center justify-center gap-2 py-2.5 px-3 border border-gray-600 rounded-md hover:bg-gray-700 transition">
+                        <i class="fas fa-plus"></i>
+                        <span>New chat</span>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto px-3">
+                    <div class="text-xs text-gray-400 uppercase tracking-wider mb-2 px-3 pt-2">Recent Chats</div>
+                    <div id="historyList" class="space-y-1">
+                        <!-- History items will be added here -->
+                    </div>
+                </div>
+                
+                <div class="p-3 border-t border-gray-700">
+                    <div class="flex items-center p-3 rounded-md hover:bg-gray-700 cursor-pointer">
+                        <div class="bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="ml-3 text-sm truncate" id="userEmail">user@example.com</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Overlay for mobile sidebar -->
+            <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col">
+                <!-- Progress Bar -->
+                <div class="progress-bar" id="progressBar"></div>
+                
+                <!-- Chat Container -->
+                <div id="chatContainer" class="chat-container overflow-y-auto p-4">
+                    <div class="max-w-3xl mx-auto w-full">
+                        <!-- Welcome message -->
+                        <div class="message-ai rounded-md p-4 mb-6 fade-in">
+                            <div class="flex">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center mr-3">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold mb-1">Lizz AI</div>
+                                    <div class="text-gray-300">
+                                        <p>Hello! I'm Lizz AI, your comprehensive artificial intelligence assistant. I can help with scientific research, education, creative projects, and more.</p>
+                                        <p class="mt-2">Try switching to DeepThink mode for complex reasoning or Web Search mode for real-time information.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat messages will appear here -->
+                        <div id="chatMessages"></div>
+                        
+                        <!-- Typing indicator -->
+                        <div id="typingIndicator" class="message-ai rounded-md p-4 mb-6 hidden">
+                            <div class="flex">
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center mr-3">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div class="px-4 pb-6">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="relative">
+                            <textarea 
+                                id="userInput" 
+                                placeholder="Message Lizz AI..." 
+                                class="w-full bg-input border border-gray-600 rounded-xl py-3 pl-4 pr-12 focus:outline-none focus:ring-1 focus:ring-primary"
+                                rows="1"
+                            ></textarea>
+                            <button id="sendButton" class="absolute right-3 bottom-2.5 text-gray-400 hover:text-white">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="text-center mt-2 text-xs text-gray-500">
+                            Lizz AI can make mistakes. Consider checking important information.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const premiumUsers = [
+            "haivarunkarthik@gmail.com",
+            "varunkarthiktrading@gmail.com",
+            "aiwinsvarun@gmail.com"
+        ];
+        
+        // IMPORTANT: Update this with your actual Render backend URL
+        const BACKEND_URL = "https://lizz-ai-backend.onrender.com";
+        
+        // DOM Elements
+        const loginModal = document.getElementById('loginModal');
+        const app = document.getElementById('app');
+        const loginForm = document.getElementById('loginForm');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const newChat = document.getElementById('newChat');
+        const historyList = document.getElementById('historyList');
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const pricingDropdown = document.getElementById('pricingDropdown');
+        const pricingMenu = document.getElementById('pricingMenu');
+        const userEmail = document.getElementById('userEmail');
+        const autoLearningIndicator = document.getElementById('autoLearningIndicator');
+        const progressBar = document.getElementById('progressBar');
+        
+        // Mode buttons
+        const normalMode = document.getElementById('normalMode');
+        const deepThinkMode = document.getElementById('deepThinkMode');
+        const webSearchMode = document.getElementById('webSearchMode');
+        
+        // State
+        let currentUser = null;
+        let chatHistory = [];
+        let fullHistory = [];
+        let isPremium = false;
+        let currentMode = 'normal'; // 'normal', 'deepthink', 'websearch'
+        let autoLearningInterval = null;
+        
+        // Initialize
+        function init() {
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('lizzUser');
+            
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            } else {
+                showLogin();
+            }
+            
+            // Load history
+            loadHistory();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Start auto-learning
+            startAutoLearning();
+        }
+        
+        // Show login modal
+        function showLogin() {
+            loginModal.classList.remove('hidden');
+            app.classList.add('hidden');
+        }
+        
+        // Show main app
+        function showApp() {
+            loginModal.classList.add('hidden');
+            app.classList.remove('hidden');
+            userEmail.textContent = currentUser.email;
+            
+            // Check if user is premium
+            isPremium = premiumUsers.includes(currentUser.email);
+            if (isPremium) {
+                document.querySelector('#pricingDropdown span').textContent = 'Premium';
+                document.querySelector('#pricingDropdown i').className = 'fas fa-crown mr-1';
+                document.querySelector('#pricingDropdown').classList.add('premium-badge');
+            } else {
+                document.querySelector('#pricingDropdown span').textContent = 'Upgrade';
+                document.querySelector('#pricingDropdown i').className = 'fas fa-gem mr-1';
+                document.querySelector('#pricingDropdown').classList.remove('premium-badge');
+            }
         }
         
         // Load history
-        loadHistory();
+        function loadHistory() {
+            historyList.innerHTML = '';
+            const sampleHistory = [
+                "Explain quantum computing in simple terms",
+                "How do I make an HTTP request in JavaScript?",
+                "Write a poem about artificial intelligence",
+                "What's the difference between React and Vue?",
+                "Show me how to center a div with CSS"
+            ];
+            
+            sampleHistory.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item flex items-center p-3 rounded-md cursor-pointer truncate text-sm';
+                historyItem.innerHTML = `
+                    <i class="fas fa-message mr-2 text-gray-500"></i>
+                    <span class="truncate">${item}</span>
+                `;
+                historyItem.addEventListener('click', () => {
+                    userInput.value = item;
+                    userInput.focus();
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                });
+                historyList.appendChild(historyItem);
+            });
+        }
+        
+        // Add message to chat
+        function addMessage(role, content, mode = 'normal') {
+            const messageDiv = document.createElement('div');
+            
+            // Determine message style based on role and mode
+            if (role === 'user') {
+                messageDiv.className = 'message-user rounded-md p-4 mb-6 fade-in';
+                messageDiv.innerHTML = `
+                    <div class="flex">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-3">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="text-gray-100 whitespace-pre-wrap">${content}</div>
+                    </div>
+                `;
+            } else if (mode === 'deepthink') {
+                messageDiv.className = 'message-deepthink rounded-md p-4 mb-6 fade-in';
+                messageDiv.innerHTML = `
+                    <div class="flex">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-deepthink flex items-center justify-center mr-3">
+                            <i class="fas fa-microscope"></i>
+                        </div>
+                        <div class="text-gray-100 whitespace-pre-wrap">
+                            <div class="flex items-center mb-2">
+                                <span class="deepthink-badge text-xs px-2 py-0.5 rounded mr-2">DeepThink</span>
+                                <span class="text-xs text-gray-300">Enhanced reasoning activated</span>
+                            </div>
+                            ${content}
+                        </div>
+                    </div>
+                `;
+            } else if (mode === 'websearch') {
+                messageDiv.className = 'message-websearch rounded-md p-4 mb-6 fade-in';
+                messageDiv.innerHTML = `
+                    <div class="flex">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-search flex items-center justify-center mr-3">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="text-gray-100 whitespace-pre-wrap">
+                            <div class="flex items-center mb-2">
+                                <span class="search-badge text-xs px-2 py-0.5 rounded mr-2">Web Search</span>
+                                <span class="text-xs text-gray-300">Real-time data retrieved</span>
+                            </div>
+                            ${content}
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.className = 'message-ai rounded-md p-4 mb-6 fade-in';
+                messageDiv.innerHTML = `
+                    <div class="flex">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center mr-3">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="text-gray-300 whitespace-pre-wrap">${content}</div>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Call your secure backend API
+        async function callLizzAI(prompt) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        message: prompt,
+                        mode: currentMode
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(`API Error: ${error.error || 'Unknown error'}`);
+                }
+                
+                const data = await response.json();
+                return data.response;
+            } catch (error) {
+                console.error("Lizz AI API Error:", error);
+                return `Sorry, I encountered an error: ${error.message}. Please try again.`;
+            }
+        }
+        
+        // Handle user message
+        async function handleUserMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // Add user message
+            addMessage('user', message);
+            
+            // Clear input
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            
+            // Add to history
+            fullHistory.push(message);
+            if (fullHistory.length > 20) {
+                fullHistory.shift();
+            }
+            loadHistory();
+            
+            // Show typing indicator
+            typingIndicator.classList.remove('hidden');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            try {
+                // Get AI response from your secure backend
+                const response = await callLizzAI(message);
+                
+                // Hide typing indicator and show response
+                typingIndicator.classList.add('hidden');
+                
+                // Determine message type based on current mode
+                addMessage('ai', response, currentMode);
+            } catch (error) {
+                typingIndicator.classList.add('hidden');
+                addMessage('ai', `Error: ${error.message}`);
+            }
+        }
+        
+        // Switch modes
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update UI
+            normalMode.classList.remove('active', 'bg-primary');
+            deepThinkMode.classList.remove('active', 'bg-deepthink');
+            webSearchMode.classList.remove('active', 'bg-search');
+            
+            normalMode.classList.add('bg-gray-700', 'text-gray-300');
+            deepThinkMode.classList.add('bg-gray-700', 'text-gray-300');
+            webSearchMode.classList.add('bg-gray-700', 'text-gray-300');
+            
+            if (mode === 'normal') {
+                normalMode.classList.add('active', 'bg-primary');
+                normalMode.classList.remove('bg-gray-700', 'text-gray-300');
+            } else if (mode === 'deepthink') {
+                deepThinkMode.classList.add('active', 'bg-deepthink');
+                deepThinkMode.classList.remove('bg-gray-700', 'text-gray-300');
+            } else if (mode === 'websearch') {
+                webSearchMode.classList.add('active', 'bg-search');
+                webSearchMode.classList.remove('bg-gray-700', 'text-gray-300');
+            }
+        }
+        
+        // Start auto-learning process
+        function startAutoLearning() {
+            // Show indicator
+            autoLearningIndicator.classList.remove('hidden');
+            
+            // Simulate learning process
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    progressBar.style.width = '0%';
+                }
+            }, 20); // 100% in 5 seconds
+            
+            // In a real implementation, this would:
+            // 1. Fetch latest information from knowledge sources
+            // 2. Update internal models
+            // 3. Process new data patterns
+            // 4. Optimize response algorithms
+            
+            // Restart every minute
+            setTimeout(startAutoLearning, 60000);
+        }
         
         // Set up event listeners
-        setupEventListeners();
-        
-        // Start auto-learning
-        startAutoLearning();
-    }
-    
-    // Show login modal
-    function showLogin() {
-        loginModal.classList.remove('hidden');
-        app.classList.add('hidden');
-    }
-    
-    // Show main app
-    function showApp() {
-        loginModal.classList.add('hidden');
-        app.classList.remove('hidden');
-        userEmail.textContent = currentUser.email;
-        
-        // Check if user is premium
-        isPremium = premiumUsers.includes(currentUser.email);
-        if (isPremium) {
-            document.querySelector('#pricingDropdown span').textContent = 'Premium';
-            document.querySelector('#pricingDropdown i').className = 'fas fa-crown mr-1';
-            document.querySelector('#pricingDropdown').classList.add('premium-badge');
-        } else {
-            document.querySelector('#pricingDropdown span').textContent = 'Upgrade';
-            document.querySelector('#pricingDropdown i').className = 'fas fa-gem mr-1';
-            document.querySelector('#pricingDropdown').classList.remove('premium-badge');
-        }
-    }
-    
-    // Load history
-    function loadHistory() {
-        historyList.innerHTML = '';
-        const sampleHistory = [
-            "Explain quantum computing in simple terms",
-            "How do I make an HTTP request in JavaScript?",
-            "Write a poem about artificial intelligence",
-            "What's the difference between React and Vue?",
-            "Show me how to center a div with CSS"
-        ];
-        
-        sampleHistory.forEach((item, index) => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item flex items-center p-3 rounded-md cursor-pointer truncate text-sm';
-            historyItem.innerHTML = `
-                <i class="fas fa-message mr-2 text-gray-500"></i>
-                <span class="truncate">${item}</span>
-            `;
-            historyItem.addEventListener('click', () => {
-                userInput.value = item;
-                userInput.focus();
+        function setupEventListeners() {
+            // Login form
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const remember = document.getElementById('remember').checked;
+                
+                // Simple validation
+                if (email && password) {
+                    currentUser = { email, password };
+                    
+                    if (remember) {
+                        localStorage.setItem('lizzUser', JSON.stringify(currentUser));
+                    }
+                    
+                    showApp();
+                }
+            });
+            
+            // Toggle sidebar
+            toggleSidebar.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            });
+            
+            // Close sidebar when clicking overlay
+            sidebarOverlay.addEventListener('click', () => {
                 sidebar.classList.add('-translate-x-full');
                 sidebarOverlay.classList.add('hidden');
             });
-            historyList.appendChild(historyItem);
-        });
-    }
-    
-    // Add message to chat
-    function addMessage(role, content, mode = 'normal') {
-        const messageDiv = document.createElement('div');
-        
-        // Determine message style based on role and mode
-        if (role === 'user') {
-            messageDiv.className = 'message-user rounded-md p-4 mb-6 fade-in';
-            messageDiv.innerHTML = `
-                <div class="flex">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-3">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="text-gray-100 whitespace-pre-wrap">${content}</div>
-                </div>
-            `;
-        } else if (mode === 'deepthink') {
-            messageDiv.className = 'message-deepthink rounded-md p-4 mb-6 fade-in';
-            messageDiv.innerHTML = `
-                <div class="flex">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-deepthink flex items-center justify-center mr-3">
-                        <i class="fas fa-microscope"></i>
-                    </div>
-                    <div class="text-gray-100 whitespace-pre-wrap">
-                        <div class="flex items-center mb-2">
-                            <span class="deepthink-badge text-xs px-2 py-0.5 rounded mr-2">DeepThink</span>
-                            <span class="text-xs text-gray-300">Enhanced reasoning activated</span>
-                        </div>
-                        ${content}
-                    </div>
-                </div>
-            `;
-        } else if (mode === 'websearch') {
-            messageDiv.className = 'message-websearch rounded-md p-4 mb-6 fade-in';
-            messageDiv.innerHTML = `
-                <div class="flex">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-search flex items-center justify-center mr-3">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <div class="text-gray-100 whitespace-pre-wrap">
-                        <div class="flex items-center mb-2">
-                            <span class="search-badge text-xs px-2 py-0.5 rounded mr-2">Web Search</span>
-                            <span class="text-xs text-gray-300">Real-time data retrieved</span>
-                        </div>
-                        ${content}
-                    </div>
-                </div>
-            `;
-        } else {
-            messageDiv.className = 'message-ai rounded-md p-4 mb-6 fade-in';
-            messageDiv.innerHTML = `
-                <div class="flex">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center mr-3">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <div class="text-gray-300 whitespace-pre-wrap">${content}</div>
-                </div>
-            `;
-        }
-        
-        chatMessages.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-    
-    // Call your secure backend API
-    async function callLizzAI(prompt) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/api/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    message: prompt,
-                    mode: currentMode
-                })
+            
+            // New chat
+            newChat.addEventListener('click', () => {
+                chatMessages.innerHTML = '';
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
             });
             
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(`API Error: ${error.error || 'Unknown error'}`);
-            }
+            // Send message
+            sendButton.addEventListener('click', handleUserMessage);
             
-            const data = await response.json();
-            return data.response;
-        } catch (error) {
-            console.error("Lizz AI API Error:", error);
-            return `Sorry, I encountered an error: ${error.message}. Please try again.`;
-        }
-    }
-    
-    // Handle user message
-    async function handleUserMessage() {
-        const message = userInput.value.trim();
-        if (!message) return;
-        
-        // Add user message
-        addMessage('user', message);
-        
-        // Clear input
-        userInput.value = '';
-        userInput.style.height = 'auto';
-        
-        // Add to history
-        fullHistory.push(message);
-        if (fullHistory.length > 20) {
-            fullHistory.shift();
-        }
-        loadHistory();
-        
-        // Show typing indicator
-        typingIndicator.classList.remove('hidden');
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        
-        try {
-            // Get AI response from your secure backend
-            const response = await callLizzAI(message);
-            
-            // Hide typing indicator and show response
-            typingIndicator.classList.add('hidden');
-            
-            // Determine message type based on current mode
-            addMessage('ai', response, currentMode);
-        } catch (error) {
-            typingIndicator.classList.add('hidden');
-            addMessage('ai', `Error: ${error.message}`);
-        }
-    }
-    
-    // Switch modes
-    function switchMode(mode) {
-        currentMode = mode;
-        
-        // Update UI
-        normalMode.classList.remove('active', 'bg-primary');
-        deepThinkMode.classList.remove('active', 'bg-deepthink');
-        webSearchMode.classList.remove('active', 'bg-search');
-        
-        normalMode.classList.add('bg-gray-700', 'text-gray-300');
-        deepThinkMode.classList.add('bg-gray-700', 'text-gray-300');
-        webSearchMode.classList.add('bg-gray-700', 'text-gray-300');
-        
-        if (mode === 'normal') {
-            normalMode.classList.add('active', 'bg-primary');
-            normalMode.classList.remove('bg-gray-700', 'text-gray-300');
-        } else if (mode === 'deepthink') {
-            deepThinkMode.classList.add('active', 'bg-deepthink');
-            deepThinkMode.classList.remove('bg-gray-700', 'text-gray-300');
-        } else if (mode === 'websearch') {
-            webSearchMode.classList.add('active', 'bg-search');
-            webSearchMode.classList.remove('bg-gray-700', 'text-gray-300');
-        }
-    }
-    
-    // Start auto-learning process
-    function startAutoLearning() {
-        // Show indicator
-        autoLearningIndicator.classList.remove('hidden');
-        
-        // Simulate learning process
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 2;
-            progressBar.style.width = `${progress}%`;
-            
-            if (progress >= 100) {
-                clearInterval(interval);
-                progressBar.style.width = '0%';
-            }
-        }, 20); // 100% in 5 seconds
-        
-        // In a real implementation, this would:
-        // 1. Fetch latest information from knowledge sources
-        // 2. Update internal models
-        // 3. Process new data patterns
-        // 4. Optimize response algorithms
-        
-        // Restart every minute
-        setTimeout(startAutoLearning, 60000);
-    }
-    
-    // Set up event listeners
-    function setupEventListeners() {
-        // Login form
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember').checked;
-            
-            // Simple validation
-            if (email && password) {
-                currentUser = { email, password };
-                
-                if (remember) {
-                    localStorage.setItem('lizzUser', JSON.stringify(currentUser));
+            // Send on Enter (without Shift)
+            userInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUserMessage();
                 }
-                
-                showApp();
-            }
-        });
+            });
+            
+            // Auto-resize textarea
+            userInput.addEventListener('input', () => {
+                userInput.style.height = 'auto';
+                userInput.style.height = (userInput.scrollHeight) + 'px';
+            });
+            
+            // Pricing dropdown
+            pricingDropdown.addEventListener('click', () => {
+                pricingMenu.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking elsewhere
+            document.addEventListener('click', (e) => {
+                if (!pricingDropdown.contains(e.target) && !pricingMenu.contains(e.target)) {
+                    pricingMenu.classList.add('hidden');
+                }
+            });
+            
+            // Mode switching
+            normalMode.addEventListener('click', () => switchMode('normal'));
+            deepThinkMode.addEventListener('click', () => switchMode('deepthink'));
+            webSearchMode.addEventListener('click', () => switchMode('websearch'));
+        }
         
-        // Toggle sidebar
-        toggleSidebar.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
-            sidebarOverlay.classList.toggle('hidden');
-        });
-        
-        // Close sidebar when clicking overlay
-        sidebarOverlay.addEventListener('click', () => {
-            sidebar.classList.add('-translate-x-full');
-            sidebarOverlay.classList.add('hidden');
-        });
-        
-        // New chat
-        newChat.addEventListener('click', () => {
-            chatMessages.innerHTML = '';
-            sidebar.classList.add('-translate-x-full');
-            sidebarOverlay.classList.add('hidden');
-        });
-        
-        // Send message
-        sendButton.addEventListener('click', handleUserMessage);
-        
-        // Send on Enter (without Shift)
-        userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleUserMessage();
-            }
-        });
-        
-        // Auto-resize textarea
-        userInput.addEventListener('input', () => {
-            userInput.style.height = 'auto';
-            userInput.style.height = (userInput.scrollHeight) + 'px';
-        });
-        
-        // Pricing dropdown
-        pricingDropdown.addEventListener('click', () => {
-            pricingMenu.classList.toggle('hidden');
-        });
-        
-        // Close dropdown when clicking elsewhere
-        document.addEventListener('click', (e) => {
-            if (!pricingDropdown.contains(e.target) && !pricingMenu.contains(e.target)) {
-                pricingMenu.classList.add('hidden');
-            }
-        });
-        
-        // Mode switching
-        normalMode.addEventListener('click', () => switchMode('normal'));
-        deepThinkMode.addEventListener('click', () => switchMode('deepthink'));
-        webSearchMode.addEventListener('click', () => switchMode('websearch'));
-    }
-    
-    // Initialize the app
-    document.addEventListener('DOMContentLoaded', init);
-</script>
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
