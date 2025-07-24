@@ -738,3 +738,24 @@
     </script>
 </body>
 </html>
+<script>
+  // ... existing code ...
+
+  async function handleUserMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    addMessage('user', message);
+    userInput.value = '';
+    userInput.style.height = 'auto';
+
+    try {
+      const response = await callLizzAI(message);
+      addMessage('ai', response);
+    } catch (error) {
+      addMessage('ai', `Error: ${error.message}`);
+    }
+  }
+
+  // ... rest of the code ...
+</script>
